@@ -1,0 +1,481 @@
+<!DOCTYPE html> 
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presupuesto y Factura</title>
+    
+    <!-- Enlace al manifest.json para la PWA -->
+    <link rel="manifest" href="manifest.json">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        td input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            color: #007bff;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .totals table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .totals td {
+            padding: 10px;
+            text-align: right;
+        }
+        .buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .buttons button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .buttons button:hover {
+            background-color: #45a049;
+        }
+        input[type="file"] {
+            margin-top: 10px;
+        }
+
+        /* Ajustes para membrete y logo */
+        .company-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .logo {
+            width: 250px;
+            height: 170px;
+            border: 1px solid #ddd;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+        .company-details {
+            text-align: right;
+        }
+        .highlight {
+            font-weight: bold;
+            color: black;
+        }
+        /* Ajustes para firmas */
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+        }
+        .signature-box {
+            width: 45%;
+            text-align: center;
+            border-top: 1px solid black;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestión de Presupuestos y Facturas</h1>
+
+        <!-- Opción para seleccionar tipo de documento -->
+        <label for="document-type">Tipo de documento:</label>
+        <select id="document-type" onchange="updateDocumentType()">
+            <option value="presupuesto">Presupuesto</option>
+            <option value="factura">Factura</option>
+        </select><br><br>
+
+        <!-- Membrete de la empresa y logo -->
+        <div class="company-header">
+            <!-- Logo a la izquierda -->
+            <div class="logo" id="logo-placeholder">LOGO</div>
+            
+            <!-- Membrete a la derecha -->
+            <div class="company-details">
+                <label class="highlight">Nombre de la Empresa:</label><br>
+                <input type="text" id="company-name" placeholder="Nombre de la Empresa" style="width: 100%;"><br>
+                <label class="highlight">Dirección de la Empresa:</label><br>
+                <input type="text" id="company-address" placeholder="Dirección de la Empresa" style="width: 100%;"><br>
+                <label class="highlight">Población:</label><br>
+                <input type="text" id="company-city" placeholder="Población" style="width: 100%;"><br>
+                <label class="highlight">Provincia:</label><br>
+                <input type="text" id="company-province" placeholder="Provincia" style="width: 100%;"><br>
+                <label class="highlight">DNI/NIF de la Empresa:</label><br>
+                <input type="text" id="company-dni" placeholder="DNI/NIF de la Empresa" style="width: 100%;"><br>
+            </div>
+        </div>
+
+        <!-- Datos del cliente -->
+        <div>
+            <label class="highlight">Cliente:</label> 
+            <input type="text" id="client-name" placeholder="Nombre del cliente"><br>
+            <label class="highlight">Dirección del Cliente:</label> 
+            <input type="text" id="client-address" placeholder="Dirección del cliente"><br>
+            <label class="highlight">Población:</label> 
+            <input type="text" id="client-city" placeholder="Población del cliente"><br>
+            <label class="highlight">Provincia:</label> 
+            <input type="text" id="client-province" placeholder="Provincia del cliente"><br>
+            <label class="highlight">DNI/NIF del Cliente:</label> 
+            <input type="text" id="client-dni" placeholder="DNI/NIF del cliente"><br>
+            <label class="highlight">Nº Documento:</label> 
+            <input type="text" id="document-number"><br>
+            <label class="highlight">Fecha:</label> 
+            <input type="date" id="document-date"><br>
+        </div>
+
+        <!-- Tabla de conceptos -->
+        <div class="item-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cantidad</th>
+                        <th>Concepto</th>
+                        <th>Precio</th>
+                        <th>Importe</th>
+                        <th>Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody id="item-list">
+                    <tr>
+                        <td><input type="number" class="item-quantity" style="width: 50px;" onchange="calculateRowTotal(this)"></td>
+                        <td><input type="text" class="item-description" style="width: 100%;"></td>
+                        <td><input type="number" class="item-price" style="width: 80px;" onchange="calculateRowTotal(this)"></td>
+                        <td><span class="item-total">0.00</span></td>
+                        <td><button onclick="deleteRow(this)" style="background-color: #f44336; color: white;">Eliminar</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="totals">
+            <table>
+                <tr>
+                    <td>Base Imponible:</td>
+                    <td><span id="base-imponible">0.00</span> €</td>
+                </tr>
+                <tr>
+                    <td>IVA %:</td>
+                    <td><input type="number" id="iva" value="21" style="width: 50px;" onchange="calculateTotals()"> %</td>
+                </tr>
+                <tr>
+                    <td>Importe IVA:</td>
+                    <td><span id="iva-amount">0.00</span> €</td>
+                </tr>
+                <tr>
+                    <td>Total:</td>
+                    <td><span id="total-amount">0.00</span> €</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Botón para subir logo -->
+        <input type="file" id="logo-upload" accept="image/*" onchange="uploadLogo()"><br>
+
+        <!-- Seleccionar documento a cargar -->
+        <label for="document-list">Cargar documento guardado:</label>
+        <select id="document-list">
+        </select><br><br>
+
+        <!-- Botón para eliminar archivo seleccionado -->
+        <button onclick="deleteDocument()">Eliminar Documento Seleccionado</button><br><br>
+
+        <!-- Botones -->
+        <div class="buttons">
+            <button onclick="addItemRow()">Añadir fila</button>
+            <button onclick="saveData()">Guardar Presupuesto/Factura</button>
+            <button onclick="loadSelectedData()">Cargar Documento</button>
+            <button onclick="generatePDF()">Descargar PDF</button>
+        </div>
+
+        <!-- Firma de empresa y cliente -->
+        <div class="signatures">
+            <div class="signature-box">Firma de la Empresa</div>
+            <div class="signature-box">Firma del Cliente</div>
+        </div>
+    </div>
+
+    <script>
+        let logoImage = null;
+        let documentType = 'presupuesto';
+
+        function updateDocumentType() {
+            documentType = document.getElementById('document-type').value;
+        }
+
+        function uploadLogo() {
+            const input = document.getElementById('logo-upload');
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                logoImage = e.target.result;
+                document.getElementById('logo-placeholder').innerHTML = `<img src="${logoImage}" style="max-width: 100%; max-height: 100%;">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function calculateRowTotal(element) {
+            const row = element.parentNode.parentNode;
+            const quantity = row.querySelector('.item-quantity').value;
+            const price = row.querySelector('.item-price').value;
+            const total = quantity * price;
+            row.querySelector('.item-total').textContent = total.toFixed(2);
+            calculateTotals();
+        }
+
+        function calculateTotals() {
+            let baseImponible = 0;
+            document.querySelectorAll('.item-total').forEach(function(totalElement) {
+                baseImponible += parseFloat(totalElement.textContent);
+            });
+            document.getElementById('base-imponible').textContent = baseImponible.toFixed(2);
+
+            const iva = parseFloat(document.getElementById('iva').value);
+            const ivaAmount = baseImponible * (iva / 100);
+            document.getElementById('iva-amount').textContent = ivaAmount.toFixed(2);
+
+            const totalAmount = baseImponible + ivaAmount;
+            document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
+        }
+
+        function addItemRow() {
+            const rowHTML = `
+                <tr>
+                    <td><input type="number" class="item-quantity" style="width: 50px;" onchange="calculateRowTotal(this)"></td>
+                    <td><input type="text" class="item-description" style="width: 100%;"></td>
+                    <td><input type="number" class="item-price" style="width: 80px;" onchange="calculateRowTotal(this)"></td>
+                    <td><span class="item-total">0.00</span></td>
+                    <td><button onclick="deleteRow(this)" style="background-color: #f44336; color: white;">Eliminar</button></td>
+                </tr>`;
+            document.getElementById('item-list').insertAdjacentHTML('beforeend', rowHTML);
+        }
+
+        function deleteRow(button) {
+            const row = button.parentNode.parentNode;
+            row.remove();
+            calculateTotals(); 
+        }
+
+        // Guardar el documento con un identificador único
+        function saveData() {
+            const documentID = `${documentType}_${document.getElementById('document-number').value}_${Date.now()}`;
+            const data = {
+                documentID: documentID,
+                documentType: documentType,
+                companyName: document.getElementById('company-name').value,
+                companyAddress: document.getElementById('company-address').value,
+                companyCity: document.getElementById('company-city').value,
+                companyProvince: document.getElementById('company-province').value,
+                companyDNI: document.getElementById('company-dni').value,
+                clientName: document.getElementById('client-name').value,
+                clientAddress: document.getElementById('client-address').value,
+                clientCity: document.getElementById('client-city').value,
+                clientProvince: document.getElementById('client-province').value,
+                clientDNI: document.getElementById('client-dni').value,
+                documentNumber: document.getElementById('document-number').value,
+                documentDate: document.getElementById('document-date').value,
+                iva: document.getElementById('iva').value,
+                itemList: Array.from(document.querySelectorAll('#item-list tr')).map(row => ({
+                    quantity: row.querySelector('.item-quantity').value,
+                    description: row.querySelector('.item-description').value,
+                    price: row.querySelector('.item-price').value,
+                    total: row.querySelector('.item-total').textContent
+                }))
+            };
+            localStorage.setItem(documentID, JSON.stringify(data));
+            alert('Datos guardados correctamente.');
+            loadDocumentList(); // Recargar la lista de documentos
+        }
+
+        // Cargar la lista de documentos guardados
+        function loadDocumentList() {
+            const documentList = document.getElementById('document-list');
+            documentList.innerHTML = '';
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('presupuesto') || key.startsWith('factura')) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = key;
+                    documentList.appendChild(option);
+                }
+            });
+        }
+
+        // Cargar el documento seleccionado
+        function loadSelectedData() {
+            const selectedDocumentID = document.getElementById('document-list').value;
+            const data = JSON.parse(localStorage.getItem(selectedDocumentID));
+            if (!data) {
+                alert('No hay datos guardados.');
+                return;
+            }
+
+            documentType = data.documentType;
+            document.getElementById('document-type').value = data.documentType;
+            document.getElementById('company-name').value = data.companyName;
+            document.getElementById('company-address').value = data.companyAddress;
+            document.getElementById('company-city').value = data.companyCity;
+            document.getElementById('company-province').value = data.companyProvince;
+            document.getElementById('company-dni').value = data.companyDNI;
+            document.getElementById('client-name').value = data.clientName;
+            document.getElementById('client-address').value = data.clientAddress;
+            document.getElementById('client-city').value = data.clientCity;
+            document.getElementById('client-province').value = data.clientProvince;
+            document.getElementById('client-dni').value = data.clientDNI;
+            document.getElementById('document-number').value = data.documentNumber;
+            document.getElementById('document-date').value = data.documentDate;
+            document.getElementById('iva').value = data.iva;
+
+            const itemList = document.getElementById('item-list');
+            itemList.innerHTML = '';
+            data.itemList.forEach(item => {
+                const rowHTML = `
+                    <tr>
+                        <td><input type="number" class="item-quantity" value="${item.quantity}" style="width: 50px;" onchange="calculateRowTotal(this)"></td>
+                        <td><input type="text" class="item-description" value="${item.description}" style="width: 100%;"></td>
+                        <td><input type="number" class="item-price" value="${item.price}" style="width: 80px;" onchange="calculateRowTotal(this)"></td>
+                        <td><span class="item-total">${item.total}</span></td>
+                        <td><button onclick="deleteRow(this)" style="background-color: #f44336; color: white;">Eliminar</button></td>
+                    </tr>`;
+                itemList.insertAdjacentHTML('beforeend', rowHTML);
+            });
+
+            calculateTotals();
+            alert('Datos cargados correctamente.');
+        }
+
+        // Eliminar el documento seleccionado
+        function deleteDocument() {
+            const selectedDocumentID = document.getElementById('document-list').value;
+            if (confirm("¿Estás seguro de que deseas eliminar este documento?")) {
+                localStorage.removeItem(selectedDocumentID);
+                loadDocumentList(); // Recargar la lista de documentos
+                alert('Documento eliminado.');
+            }
+        }
+
+        // Generar el PDF con el número de documento y logo más grande
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            if (logoImage) {
+                // Aumentamos el tamaño del logo a 80x50
+                doc.addImage(logoImage, 'JPEG', 10, 10, 80, 50); 
+            }
+
+            doc.setTextColor(0, 0, 255);
+            doc.text(`Documento: ${documentType}`, 130, 10); // Tipo de documento hacia la derecha
+            doc.text(`Número de Documento: ${document.getElementById('document-number').value}`, 130, 20); // Añadir número de documento
+            doc.text(`Empresa: ${document.getElementById('company-name').value}`, 130, 30);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Dirección: ${document.getElementById('company-address').value}`, 130, 40);
+            doc.text(`Población: ${document.getElementById('company-city').value}`, 130, 50);
+            doc.text(`Provincia: ${document.getElementById('company-province').value}`, 130, 60);
+            doc.text(`DNI/NIF: ${document.getElementById('company-dni').value}`, 130, 70);
+
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Cliente: ${document.getElementById('client-name').value}`, 10, 70);
+            doc.text(`Dirección: ${document.getElementById('client-address').value}`, 10, 80);
+            doc.text(`Población: ${document.getElementById('client-city').value}`, 10, 90);
+            doc.text(`Provincia: ${document.getElementById('client-province').value}`, 10, 100);
+            doc.text(`DNI/NIF: ${document.getElementById('client-dni').value}`, 10, 110);
+
+            const itemList = Array.from(document.querySelectorAll('#item-list tr')).map(row => {
+                const quantity = row.querySelector('.item-quantity').value || '0';
+                const description = row.querySelector('.item-description').value || 'Concepto vacío';
+                const price = row.querySelector('.item-price').value || '0.00';
+                const total = row.querySelector('.item-total').textContent || '0.00';
+                return [quantity, description, price, total];
+            });
+
+            doc.autoTable({
+                head: [['Cantidad', 'Concepto', 'Precio', 'Importe']],
+                body: itemList,
+                startY: 120,
+                theme: 'grid',
+                columnStyles: { 
+                    0: { cellWidth: 20 },
+                    1: { cellWidth: 100 },
+                    2: { cellWidth: 30 },
+                    3: { cellWidth: 30 }
+                },
+            });
+
+            const y = 120 + (itemList.length * 10);
+            // Movemos los totales más hacia abajo y la derecha para evitar superposición
+            doc.text(`Base Imponible: ${document.getElementById('base-imponible').textContent} €`, 130, y + 20);
+            doc.text(`IVA: ${document.getElementById('iva-amount').textContent} €`, 130, y + 30);
+            doc.text(`Total: ${document.getElementById('total-amount').textContent} €`, 130, y + 40);
+
+            // Firmas en el PDF
+            doc.text('Firma de la Empresa', 10, y + 60);
+            doc.text('Firma del Cliente', 140, y + 60);
+
+            doc.save(`${documentType}_${document.getElementById('client-name').value}.pdf`);
+        }
+
+        // Cargar la lista de documentos al cargar la página
+        window.onload = loadDocumentList;
+
+        // Registrar el Service Worker para la PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker registrado con éxito:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Registro de Service Worker fallido:', error);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
