@@ -1,13 +1,16 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Presupuesto y Factura</title>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3709305095275954"
-     crossorigin="anonymous"></script>
+    
     <!-- Enlace al manifest.json para la PWA -->
     <link rel="manifest" href="manifest.json">
+
+    <!-- Código de AdSense actualizado -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3709305095275954"
+        crossorigin="anonymous"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
@@ -239,6 +242,11 @@
             <div class="signature-box">Firma de la Empresa</div>
             <div class="signature-box">Firma del Cliente</div>
         </div>
+
+        <!-- Botón para las instrucciones de instalación -->
+        <div class="buttons">
+            <a href="install.html" class="button">Instrucciones para instalar la app</a>
+        </div>
     </div>
 
     <script>
@@ -303,7 +311,6 @@
             calculateTotals(); 
         }
 
-        // Guardar el documento con un identificador único
         function saveData() {
             const documentID = `${documentType}_${document.getElementById('document-number').value}_${Date.now()}`;
             const data = {
@@ -334,7 +341,6 @@
             loadDocumentList(); // Recargar la lista de documentos
         }
 
-        // Cargar la lista de documentos guardados
         function loadDocumentList() {
             const documentList = document.getElementById('document-list');
             documentList.innerHTML = '';
@@ -348,7 +354,6 @@
             });
         }
 
-        // Cargar el documento seleccionado
         function loadSelectedData() {
             const selectedDocumentID = document.getElementById('document-list').value;
             const data = JSON.parse(localStorage.getItem(selectedDocumentID));
@@ -391,7 +396,6 @@
             alert('Datos cargados correctamente.');
         }
 
-        // Eliminar el documento seleccionado
         function deleteDocument() {
             const selectedDocumentID = document.getElementById('document-list').value;
             if (confirm("¿Estás seguro de que deseas eliminar este documento?")) {
@@ -401,19 +405,17 @@
             }
         }
 
-        // Generar el PDF con el número de documento y logo más grande
         function generatePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
             if (logoImage) {
-                // Aumentamos el tamaño del logo a 80x50
                 doc.addImage(logoImage, 'JPEG', 10, 10, 80, 50); 
             }
 
             doc.setTextColor(0, 0, 255);
-            doc.text(`Documento: ${documentType}`, 130, 10); // Tipo de documento hacia la derecha
-            doc.text(`Número de Documento: ${document.getElementById('document-number').value}`, 130, 20); // Añadir número de documento
+            doc.text(`Documento: ${documentType}`, 130, 10); 
+            doc.text(`Número de Documento: ${document.getElementById('document-number').value}`, 130, 20); 
             doc.text(`Empresa: ${document.getElementById('company-name').value}`, 130, 30);
             doc.setTextColor(0, 0, 0);
             doc.text(`Dirección: ${document.getElementById('company-address').value}`, 130, 40);
@@ -450,22 +452,18 @@
             });
 
             const y = 120 + (itemList.length * 10);
-            // Movemos los totales más hacia abajo y la derecha para evitar superposición
             doc.text(`Base Imponible: ${document.getElementById('base-imponible').textContent} €`, 130, y + 20);
             doc.text(`IVA: ${document.getElementById('iva-amount').textContent} €`, 130, y + 30);
             doc.text(`Total: ${document.getElementById('total-amount').textContent} €`, 130, y + 40);
 
-            // Firmas en el PDF
             doc.text('Firma de la Empresa', 10, y + 60);
             doc.text('Firma del Cliente', 140, y + 60);
 
             doc.save(`${documentType}_${document.getElementById('client-name').value}.pdf`);
         }
 
-        // Cargar la lista de documentos al cargar la página
         window.onload = loadDocumentList;
 
-        // Registrar el Service Worker para la PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('service-worker.js')
